@@ -1,4 +1,4 @@
-# 🍖 FirstHam
+#  FirstHam
 
 A colorful, single-page web UI for chatting with multiple AI models using **your own API key**.
 The UI itself is one dependency-free `index.html` (pure HTML/CSS/vanilla JS); a tiny bundled
