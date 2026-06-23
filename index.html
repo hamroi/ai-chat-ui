@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>freemodel.dev Chat — multi-model playground</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #171c24;
+    --panel-2: #1f2630;
+    --border: #2a323d;
+    --text: #e6eaef;
+    --muted: #95a1b1;
+    --accent: #4f8cff;
+    --accent-strong: #3a78f0;
+    --user: #294a7a;
+    --assistant: #20272f;
+    --error-bg: #3a1f25;
+    --error-border: #6e2f3a;
+    --error-text: #ffb3bf;
+    --radius: 12px;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 600px at 80% -10%, #1a2330 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .app {
+    max-width: 920px;
+    margin: 0 auto;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  /* ---- Intro ---- */
+  .intro {
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .intro h1 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    letter-spacing: 0.2px;
+  }
+  .intro p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .intro code {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 5px;
+    font-size: 12px;
+  }
+
+  /* ---- Settings ---- */
+  .settings {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  select, input[type="text"], input[type="password"], textarea {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 9px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  select:focus, input:focus, textarea:focus { border-color: var(--accent); }
+
+  .key-row { display: flex; gap: 8px; align-items: stretch; }
+  .key-row input { flex: 1; }
+  .toggle-key {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 9px;
+    padding: 0 12px;
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .toggle-key:hover { color: var(--text); border-color: var(--accent); }
+  .hint { font-size: 11.5px; color: var(--muted); }
+  .hint.saved { color: #6fcf97; }
+
+  /* ---- Chat ---- */
+  .chat {
+    flex: 1;
+    min-height: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+  .empty {
+    margin: auto;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 360px;
+  }
+
+  .msg { display: flex; flex-direction: column; max-width: 86%; }
+  .msg .role {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 4px;
+    color: var(--muted);
+  }
+  .msg .bubble {
+    padding: 11px 14px;
+    border-radius: 14px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+    font-size: 14.5px;
+  }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.user .bubble {
+    background: var(--user);
+    border: 1px solid #34577f;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.assistant { align-self: flex-start; }
+  .msg.assistant .bubble {
+    background: var(--assistant);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.error { align-self: stretch; max-width: 100%; }
+  .msg.error .bubble {
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
+    font-size: 13.5px;
+  }
+
+  .cursor::after {
+    content: "▍";
+    animation: blink 1s steps(2, start) infinite;
+    color: var(--accent);
+    margin-left: 1px;
+  }
+  @keyframes blink { to { visibility: hidden; } }
+
+  /* typing dots */
+  .typing { align-self: flex-start; }
+  .typing .bubble {
+    background: var(--assistant);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    border-bottom-left-radius: 4px;
+    padding: 13px 16px;
+    display: inline-flex;
+    gap: 5px;
+  }
+  .typing .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    animation: bounce 1.3s infinite ease-in-out;
+  }
+  .typing .dot:nth-child(2) { animation-delay: 0.18s; }
+  .typing .dot:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* ---- Composer ---- */
+  .composer {
+    border-top: 1px solid var(--border);
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: var(--panel);
+  }
+  .composer textarea {
+    resize: none;
+    max-height: 160px;
+    min-height: 46px;
+    line-height: 1.45;
+  }
+  button.primary {
+    background: var(--accent);
+    border: 1px solid var(--accent-strong);
+    color: #fff;
+    border-radius: 10px;
+    padding: 0 20px;
+    height: 46px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+  }
+  button.primary:hover:not(:disabled) { background: var(--accent-strong); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+    gap: 10px;
+  }
+  .toolbar .status { font-size: 12px; color: var(--muted); }
+  button.ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  button.ghost:hover:not(:disabled) { color: var(--error-text); border-color: var(--error-border); }
+
+  @media (max-width: 640px) {
+    .app { padding: 10px; gap: 10px; }
+    .settings { grid-template-columns: 1fr; }
+    .msg { max-width: 94%; }
+    .intro h1 { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Intro -->
+  <section class="intro">
+    <h1>🤖 freemodel.dev Chat</h1>
+    <p>
+      This UI connects to the <strong>freemodel.dev</strong> service and lets you chat with various AI
+      models using your <strong>own API key</strong>. Pick a provider and model, paste your key, and start chatting.
+      Anthropic requests go to <code>https://cc.freemodel.dev</code> and OpenAI requests to
+      <code>https://api.freemodel.dev</code>. Your key and chat history are stored only in this browser.
+    </p>
+  </section>
+
+  <!-- Settings -->
+  <section class="settings">
+    <div class="field">
+      <label for="provider">API type</label>
+      <select id="provider">
+        <option value="anthropic">Anthropic (Claude)</option>
+        <option value="openai">OpenAI</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="model">Model / node</label>
+      <select id="model"></select>
+    </div>
+
+    <div class="field full">
+      <label for="apiKey">API key</label>
+      <div class="key-row">
+        <input id="apiKey" type="password" placeholder="Paste your API key…" autocomplete="off" spellcheck="false" />
+        <button class="toggle-key" id="toggleKey" type="button">Show</button>
+      </div>
+      <span class="hint" id="keyHint">Stored in your browser's localStorage, per provider.</span>
+    </div>
+  </section>
+
+  <!-- Chat -->
+  <section class="chat">
+    <div class="messages" id="messages">
+      <div class="empty" id="empty">
+        No messages yet. Choose a provider and model above, enter your API key, and send your first message.
+      </div>
+    </div>
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="Type a message…  (Enter to send, Shift+Enter for newline)"></textarea>
+      <button class="primary" id="send" type="button">Send</button>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <span class="status" id="status"></span>
+    <button class="ghost" id="clear" type="button">Clear history</button>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ----------------------------------------------------------------------------
+ * Configuration
+ * ------------------------------------------------------------------------- */
+const PROVIDERS = {
+  anthropic: {
+    label: "Anthropic (Claude)",
+    baseUrl: "https://cc.freemodel.dev",
+    models: [
+      { id: "claude-t0", label: "claude-t0 (free)" },
+      { id: "claude-t1", label: "claude-t1 (requires top-up)" },
+    ],
+  },
+  openai: {
+    label: "OpenAI",
+    baseUrl: "https://api.freemodel.dev",
+    models: [
+      { id: "default", label: "default (free)" },
+      { id: "openai-t1-sg", label: "openai-t1-sg (requires top-up)" },
+      { id: "openai-t2-sg", label: "openai-t2-sg (requires top-up)" },
+    ],
+  },
+};
+
+const MAX_TOKENS = 4096;
+
+const STORE = {
+  provider: "freemodel:provider",
+  model: (p) => `freemodel:model:${p}`,
+  key: (p) => `freemodel:key:${p}`,
+  history: "freemodel:history",
+};
+
+/* ----------------------------------------------------------------------------
+ * Element references
+ * ------------------------------------------------------------------------- */
+const el = {
+  provider: document.getElementById("provider"),
+  model: document.getElementById("model"),
+  apiKey: document.getElementById("apiKey"),
+  toggleKey: document.getElementById("toggleKey"),
+  keyHint: document.getElementById("keyHint"),
+  messages: document.getElementById("messages"),
+  empty: document.getElementById("empty"),
+  input: document.getElementById("input"),
+  send: document.getElementById("send"),
+  clear: document.getElementById("clear"),
+  status: document.getElementById("status"),
+};
+
+/* ----------------------------------------------------------------------------
+ * State
+ * ------------------------------------------------------------------------- */
+let history = loadHistory();   // [{ role: 'user' | 'assistant', content: string }]
+let isStreaming = false;
+
+/* ----------------------------------------------------------------------------
+ * Storage helpers
+ * ------------------------------------------------------------------------- */
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(STORE.history);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+function saveHistory() {
+  try { localStorage.setItem(STORE.history, JSON.stringify(history)); } catch {}
+}
+
+/* ----------------------------------------------------------------------------
+ * Rendering
+ * ------------------------------------------------------------------------- */
+function updateEmptyState() {
+  el.empty.style.display = history.length ? "none" : "block";
+}
+
+function appendBubble(role, content) {
+  const wrap = document.createElement("div");
+  wrap.className = "msg " + role;
+
+  const roleEl = document.createElement("div");
+  roleEl.className = "role";
+  roleEl.textContent = role === "user" ? "You" : role === "assistant" ? "Assistant" : "Error";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = content;
+
+  wrap.appendChild(roleEl);
+  wrap.appendChild(bubble);
+  el.messages.appendChild(wrap);
+  scrollToBottom();
+  return bubble;
+}
+
+function renderAll() {
+  // Remove every rendered message, keep the empty placeholder node.
+  [...el.messages.querySelectorAll(".msg, .typing")].forEach((n) => n.remove());
+  for (const m of history) appendBubble(m.role, m.content);
+  updateEmptyState();
+}
+
+function showTyping() {
+  const wrap = document.createElement("div");
+  wrap.className = "typing";
+  wrap.id = "typing";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+  wrap.appendChild(bubble);
+  el.messages.appendChild(wrap);
+  scrollToBottom();
+}
+function hideTyping() {
+  const t = document.getElementById("typing");
+  if (t) t.remove();
+}
+
+function scrollToBottom() {
+  el.messages.scrollTop = el.messages.scrollHeight;
+}
+
+function setStatus(text) {
+  el.status.textContent = text || "";
+}
+
+/* ----------------------------------------------------------------------------
+ * Settings UI wiring
+ * ------------------------------------------------------------------------- */
+function populateModels(provider, preferred) {
+  const models = PROVIDERS[provider].models;
+  el.model.innerHTML = "";
+  for (const m of models) {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.label;
+    el.model.appendChild(opt);
+  }
+  const saved = preferred || localStorage.getItem(STORE.model(provider));
+  el.model.value = models.some((m) => m.id === saved) ? saved : models[0].id;
+}
+
+function loadKeyForProvider(provider) {
+  el.apiKey.value = localStorage.getItem(STORE.key(provider)) || "";
+}
+
+function currentProvider() { return el.provider.value; }
+
+/* ----------------------------------------------------------------------------
+ * Networking — request building + streaming
+ * ------------------------------------------------------------------------- */
+function friendlyError(status, detail) {
+  const base = {
+    400: "Bad request (400) — the server rejected the request format.",
+    401: "Unauthorized (401) — your API key is missing or invalid.",
+    403: "Forbidden (403) — your API key lacks access to this model.",
+    404: "Not found (404) — check the endpoint or model name.",
+    413: "Request too large (413) — shorten the conversation and retry.",
+    429: "Rate limited (429) — too many requests or quota exceeded. Wait a moment and try again.",
+    500: "Server error (500) — the model service had a problem. Try again shortly.",
+    502: "Bad gateway (502) — the service is temporarily unavailable.",
+    503: "Service unavailable (503) — the service is overloaded. Try again shortly.",
+    529: "Overloaded (529) — the service is temporarily overloaded. Retry with backoff.",
+  };
+  let msg = base[status] || `Request failed (${status}).`;
+  if (detail) msg += `\n\nDetails: ${detail}`;
+  return msg;
+}
+
+/** Build fetch options for the selected provider. */
+function buildRequest(provider, model, apiKey, messages) {
+  const cfg = PROVIDERS[provider];
+  if (provider === "anthropic") {
+    return {
+      url: `${cfg.baseUrl}/v1/messages`,
+      options: {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: MAX_TOKENS,
+          stream: true,
+          messages,
+        }),
+      },
+    };
+  }
+  // OpenAI
+  return {
+    url: `${cfg.baseUrl}/v1/chat/completions`,
+    options: {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        stream: true,
+        messages,
+      }),
+    },
+  };
+}
+
+/** Extract a streamed text delta from a parsed SSE JSON object. */
+function extractDelta(provider, obj) {
+  if (provider === "anthropic") {
+    if (obj.type === "error") {
+      throw new Error(obj.error?.message || "Anthropic stream error");
+    }
+    if (obj.type === "content_block_delta" && obj.delta?.type === "text_delta") {
+      return obj.delta.text || "";
+    }
+    return "";
+  }
+  // OpenAI
+  if (obj.error) throw new Error(obj.error.message || "OpenAI stream error");
+  return obj.choices?.[0]?.delta?.content || "";
+}
+
+/** Extract the full text from a non-streamed JSON response. */
+function extractFull(provider, data) {
+  if (provider === "anthropic") {
+    return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+  }
+  return data.choices?.[0]?.message?.content || "";
+}
+
+/**
+ * Send the conversation and stream the reply.
+ * onText(delta) is called for each chunk of assistant text.
+ */
+async function streamReply(provider, model, apiKey, messages, onText, signal) {
+  const { url, options } = buildRequest(provider, model, apiKey, messages);
+  options.signal = signal;
+
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch (err) {
+    if (err.name === "AbortError") throw err;
+    throw new Error(
+      "Network error — could not reach the service. This is often a CORS or connectivity issue.\n\n" +
+      "Verify the endpoint is reachable and allows browser requests."
+    );
+  }
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      const errText = await response.text();
+      try {
+        const j = JSON.parse(errText);
+        detail = j.error?.message || j.message || errText;
+      } catch {
+        detail = errText;
+      }
+    } catch {}
+    throw new Error(friendlyError(response.status, (detail || "").slice(0, 500)));
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+
+  // Non-streaming fallback: server returned a plain JSON response.
+  if (!response.body || !contentType.includes("text/event-stream")) {
+    const data = await response.json();
+    onText(extractFull(provider, data));
+    return;
+  }
+
+  // Stream Server-Sent Events.
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let nl;
+    while ((nl = buffer.indexOf("\n")) >= 0) {
+      const line = buffer.slice(0, nl).trim();
+      buffer = buffer.slice(nl + 1);
+
+      if (!line || line.startsWith(":") || line.startsWith("event:")) continue;
+      if (!line.startsWith("data:")) continue;
+
+      const payload = line.slice(5).trim();
+      if (payload === "[DONE]") return;
+
+      let obj;
+      try { obj = JSON.parse(payload); } catch { continue; }
+
+      const delta = extractDelta(provider, obj);
+      if (delta) onText(delta);
+    }
+  }
+}
+
+/* ----------------------------------------------------------------------------
+ * Send flow
+ * ------------------------------------------------------------------------- */
+let abortController = null;
+
+async function send() {
+  if (isStreaming) return;
+
+  const text = el.input.value.trim();
+  if (!text) return;
+
+  const provider = currentProvider();
+  const model = el.model.value;
+  const apiKey = el.apiKey.value.trim();
+
+  if (!apiKey) {
+    appendBubble("error", "Please enter your API key first.");
+    return;
+  }
+
+  // Add the user's message.
+  history.push({ role: "user", content: text });
+  appendBubble("user", text);
+  saveHistory();
+  updateEmptyState();
+
+  el.input.value = "";
+  autoSize();
+
+  // Snapshot the conversation to send (role/content only).
+  const messages = history.map((m) => ({ role: m.role, content: m.content }));
+
+  setStreaming(true);
+  showTyping();
+  setStatus(`Contacting ${PROVIDERS[provider].label} · ${model}…`);
+
+  abortController = new AbortController();
+  let assistantBubble = null;
+  let assistantText = "";
+
+  const onText = (delta) => {
+    if (!delta) return;
+    if (!assistantBubble) {
+      hideTyping();
+      assistantBubble = appendBubble("assistant", "");
+      assistantBubble.classList.add("cursor");
+    }
+    assistantText += delta;
+    assistantBubble.textContent = assistantText;
+    scrollToBottom();
+  };
+
+  try {
+    await streamReply(provider, model, apiKey, messages, onText, abortController.signal);
+
+    hideTyping();
+    if (assistantBubble) assistantBubble.classList.remove("cursor");
+
+    if (assistantText.trim()) {
+      history.push({ role: "assistant", content: assistantText });
+      saveHistory();
+    } else if (!assistantBubble) {
+      appendBubble("error", "The model returned an empty response.");
+    }
+  } catch (err) {
+    hideTyping();
+    if (assistantBubble) {
+      // Keep whatever streamed so far, but persist it so it isn't lost.
+      assistantBubble.classList.remove("cursor");
+      if (assistantText.trim()) {
+        history.push({ role: "assistant", content: assistantText });
+        saveHistory();
+      }
+    }
+    if (err.name !== "AbortError") {
+      appendBubble("error", err.message || "Something went wrong.");
+    }
+  } finally {
+    abortController = null;
+    setStreaming(false);
+    setStatus("");
+    el.input.focus();
+  }
+}
+
+function setStreaming(on) {
+  isStreaming = on;
+  el.send.disabled = on;
+  el.send.textContent = on ? "…" : "Send";
+}
+
+/* ----------------------------------------------------------------------------
+ * Composer behaviour
+ * ------------------------------------------------------------------------- */
+function autoSize() {
+  el.input.style.height = "auto";
+  el.input.style.height = Math.min(el.input.scrollHeight, 160) + "px";
+}
+
+el.input.addEventListener("input", autoSize);
+el.input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+el.send.addEventListener("click", send);
+
+el.clear.addEventListener("click", () => {
+  if (isStreaming && abortController) abortController.abort();
+  if (!history.length || confirm("Clear the entire chat history?")) {
+    history = [];
+    saveHistory();
+    renderAll();
+    setStatus("");
+  }
+});
+
+/* ----------------------------------------------------------------------------
+ * Settings behaviour
+ * ------------------------------------------------------------------------- */
+el.provider.addEventListener("change", () => {
+  const p = currentProvider();
+  localStorage.setItem(STORE.provider, p);
+  populateModels(p);
+  loadKeyForProvider(p);
+});
+
+el.model.addEventListener("change", () => {
+  localStorage.setItem(STORE.model(currentProvider()), el.model.value);
+});
+
+el.apiKey.addEventListener("input", () => {
+  const p = currentProvider();
+  localStorage.setItem(STORE.key(p), el.apiKey.value.trim());
+  el.keyHint.textContent = "Saved in this browser ✓";
+  el.keyHint.classList.add("saved");
+});
+
+el.toggleKey.addEventListener("click", () => {
+  const show = el.apiKey.type === "password";
+  el.apiKey.type = show ? "text" : "password";
+  el.toggleKey.textContent = show ? "Hide" : "Show";
+});
+
+/* ----------------------------------------------------------------------------
+ * Init
+ * ------------------------------------------------------------------------- */
+function init() {
+  const savedProvider = localStorage.getItem(STORE.provider);
+  if (savedProvider && PROVIDERS[savedProvider]) el.provider.value = savedProvider;
+
+  const p = currentProvider();
+  populateModels(p);
+  loadKeyForProvider(p);
+  renderAll();
+  autoSize();
+  el.input.focus();
+}
+
+init();
+</script>
+</body>
+</html>
