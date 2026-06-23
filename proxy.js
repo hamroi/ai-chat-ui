@@ -1,6 +1,6 @@
-// Zero-dependency local relay for the freemodel.dev Chat UI.
+// Zero-dependency local relay for the FirstHam chat UI.
 //
-// Why this exists: freemodel.dev's endpoints do not send CORS headers, so a
+// Why this exists: the upstream (freemodel.dev) endpoints do not send CORS headers, so a
 // browser cannot call them directly (the preflight is rejected). This relay
 // runs locally, serves index.html, and forwards API calls server-side, where
 // CORS does not apply. Because the page and the API share the relay's origin,
@@ -90,7 +90,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`freemodel.dev Chat is running.`);
+  console.log(`FirstHam is running.`);
   console.log(`  Open:  http://localhost:${PORT}`);
   console.log(`  Relay: /anthropic -> ${TARGETS["/anthropic"]}`);
   console.log(`         /openai    -> ${TARGETS["/openai"]}`);

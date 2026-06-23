@@ -3,130 +3,171 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>freemodel.dev Chat — multi-model playground</title>
+<title>FirstHam — multi-model AI chat</title>
 <style>
   :root {
-    --bg: #0f1419;
-    --panel: #171c24;
-    --panel-2: #1f2630;
-    --border: #2a323d;
-    --text: #e6eaef;
-    --muted: #95a1b1;
-    --accent: #4f8cff;
-    --accent-strong: #3a78f0;
-    --user: #294a7a;
-    --assistant: #20272f;
-    --error-bg: #3a1f25;
-    --error-border: #6e2f3a;
-    --error-text: #ffb3bf;
-    --radius: 12px;
-    --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    --bg1: #eef2ff;
+    --bg2: #fae8ff;
+    --bg3: #e0f7fa;
+    --card: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --border: #e8e9f3;
+    --soft: #f6f7fb;
+    --brand1: #6366f1;
+    --brand2: #a855f7;
+    --brand3: #ec4899;
+    --user1: #6366f1;
+    --user2: #8b5cf6;
+    --assistant: #f8fafc;
+    --ok: #059669;
+    --error-bg: #fef2f2;
+    --error-border: #fca5a5;
+    --error-text: #b91c1c;
+    --radius: 16px;
+    --shadow: 0 10px 30px rgba(79, 70, 229, 0.12);
   }
 
   * { box-sizing: border-box; }
-
   html, body { height: 100%; }
 
   body {
     margin: 0;
-    background: radial-gradient(1200px 600px at 80% -10%, #1a2330 0%, var(--bg) 55%);
-    color: var(--text);
+    color: var(--ink);
+    background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%) fixed;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 15px;
     line-height: 1.5;
   }
 
   .app {
-    max-width: 920px;
+    max-width: 940px;
     margin: 0 auto;
     height: 100dvh;
     display: flex;
     flex-direction: column;
     padding: 16px;
-    gap: 12px;
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
   }
 
   /* ---- Intro ---- */
   .intro {
-    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .intro::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--brand1), var(--brand2), var(--brand3));
   }
   .intro h1 {
-    margin: 0 0 4px;
-    font-size: 18px;
+    margin: 6px 0 4px;
+    font-size: 22px;
+    font-weight: 800;
     letter-spacing: 0.2px;
+    background: linear-gradient(90deg, var(--brand1), var(--brand2), var(--brand3));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
   .intro p {
     margin: 0;
     color: var(--muted);
-    font-size: 13px;
-  }
-  .intro code {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    padding: 1px 5px;
-    font-size: 12px;
+    font-size: 13.5px;
   }
 
   /* ---- Settings ---- */
   .settings {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px;
+    padding: 14px;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px 12px;
+    gap: 12px 14px;
   }
-  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
   .field.full { grid-column: 1 / -1; }
   .field label {
-    font-size: 12px;
+    font-size: 11.5px;
     color: var(--muted);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
   }
   select, input[type="text"], input[type="password"], textarea {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 9px;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    color: var(--ink);
+    border-radius: 11px;
     padding: 10px 12px;
     font-size: 14px;
     font-family: inherit;
     width: 100%;
     outline: none;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
-  select:focus, input:focus, textarea:focus { border-color: var(--accent); }
+  select:focus, input:focus, textarea:focus {
+    border-color: var(--brand2);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+  }
 
-  .key-row { display: flex; gap: 8px; align-items: stretch; }
-  .key-row input { flex: 1; }
-  .toggle-key {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    border-radius: 9px;
-    padding: 0 12px;
+  .row { display: flex; gap: 8px; align-items: stretch; }
+  .row > select, .row > input { flex: 1; }
+
+  .btn {
+    border: 1.5px solid var(--border);
+    background: #fff;
+    color: var(--ink);
+    border-radius: 11px;
+    padding: 0 14px;
+    height: 44px;
     cursor: pointer;
     font-size: 13px;
+    font-weight: 600;
     white-space: nowrap;
+    transition: all 0.15s ease;
   }
-  .toggle-key:hover { color: var(--text); border-color: var(--accent); }
+  .btn:hover:not(:disabled) { border-color: var(--brand2); color: var(--brand2); }
+  .btn.brand {
+    border: none;
+    color: #fff;
+    background: linear-gradient(135deg, var(--brand1), var(--brand2), var(--brand3));
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+  }
+  .btn.brand:hover:not(:disabled) { filter: brightness(1.05); color: #fff; }
+  .btn.danger { color: var(--error-text); }
+  .btn.danger:hover:not(:disabled) { border-color: var(--error-border); color: var(--error-text); background: var(--error-bg); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .icon-btn {
+    border: 1.5px solid var(--border);
+    background: #fff;
+    color: var(--ink);
+    border-radius: 12px;
+    height: 46px;
+    width: 46px;
+    font-size: 18px;
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: all 0.15s ease;
+  }
+  .icon-btn:hover { border-color: var(--brand2); }
+
   .hint { font-size: 11.5px; color: var(--muted); }
-  .hint.saved { color: #6fcf97; }
+  .hint.saved { color: var(--ok); font-weight: 600; }
 
   /* ---- Chat ---- */
   .chat {
     flex: 1;
     min-height: 0;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -145,13 +186,13 @@
     text-align: center;
     color: var(--muted);
     font-size: 14px;
-    max-width: 360px;
+    max-width: 380px;
   }
 
   .msg { display: flex; flex-direction: column; max-width: 86%; }
   .msg .role {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.6px;
     margin-bottom: 4px;
@@ -159,23 +200,25 @@
   }
   .msg .bubble {
     padding: 11px 14px;
-    border-radius: 14px;
+    border-radius: 16px;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-wrap: anywhere;
     font-size: 14.5px;
   }
   .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.user .role { color: var(--brand2); }
   .msg.user .bubble {
-    background: var(--user);
-    border: 1px solid #34577f;
-    border-bottom-right-radius: 4px;
+    background: linear-gradient(135deg, var(--user1), var(--user2));
+    color: #fff;
+    border-bottom-right-radius: 5px;
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25);
   }
   .msg.assistant { align-self: flex-start; }
   .msg.assistant .bubble {
     background: var(--assistant);
     border: 1px solid var(--border);
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 5px;
   }
   .msg.error { align-self: stretch; max-width: 100%; }
   .msg.error .bubble {
@@ -188,18 +231,37 @@
   .cursor::after {
     content: "▍";
     animation: blink 1s steps(2, start) infinite;
-    color: var(--accent);
+    color: var(--brand2);
     margin-left: 1px;
   }
   @keyframes blink { to { visibility: hidden; } }
+
+  /* attachments inside messages */
+  .msg .attachments { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .msg.user .attachments { justify-content: flex-end; }
+  .msg .attachments img.thumb {
+    max-width: 220px; max-height: 220px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+  .msg .file-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: var(--ink);
+  }
 
   /* typing dots */
   .typing { align-self: flex-start; }
   .typing .bubble {
     background: var(--assistant);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    border-bottom-left-radius: 4px;
+    border-radius: 16px;
+    border-bottom-left-radius: 5px;
     padding: 13px 16px;
     display: inline-flex;
     gap: 5px;
@@ -207,15 +269,40 @@
   .typing .dot {
     width: 7px; height: 7px;
     border-radius: 50%;
-    background: var(--muted);
+    background: var(--brand2);
     animation: bounce 1.3s infinite ease-in-out;
   }
   .typing .dot:nth-child(2) { animation-delay: 0.18s; }
   .typing .dot:nth-child(3) { animation-delay: 0.36s; }
   @keyframes bounce {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
     30% { transform: translateY(-5px); opacity: 1; }
   }
+
+  /* ---- Attachment preview strip ---- */
+  .attach-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px 0;
+  }
+  .attach-item {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 5px 8px;
+    font-size: 12px;
+    max-width: 220px;
+  }
+  .attach-item img { width: 34px; height: 34px; object-fit: cover; border-radius: 7px; display: block; }
+  .attach-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .attach-item .rm {
+    cursor: pointer; color: var(--muted);
+    border: none; background: transparent;
+    font-size: 16px; line-height: 1; padding: 0 2px;
+  }
+  .attach-item .rm:hover { color: var(--error-text); }
 
   /* ---- Composer ---- */
   .composer {
@@ -224,7 +311,7 @@
     display: flex;
     gap: 10px;
     align-items: flex-end;
-    background: var(--panel);
+    background: #fff;
   }
   .composer textarea {
     resize: none;
@@ -232,46 +319,22 @@
     min-height: 46px;
     line-height: 1.45;
   }
-  button.primary {
-    background: var(--accent);
-    border: 1px solid var(--accent-strong);
-    color: #fff;
-    border-radius: 10px;
-    padding: 0 20px;
-    height: 46px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s ease;
-    white-space: nowrap;
-  }
-  button.primary:hover:not(:disabled) { background: var(--accent-strong); }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .composer .btn.brand { height: 46px; padding: 0 22px; font-size: 14px; }
 
   .toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 4px;
+    padding: 0 6px;
     gap: 10px;
   }
   .toolbar .status { font-size: 12px; color: var(--muted); }
-  button.ghost {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    border-radius: 8px;
-    padding: 7px 12px;
-    font-size: 12.5px;
-    cursor: pointer;
-  }
-  button.ghost:hover:not(:disabled) { color: var(--error-text); border-color: var(--error-border); }
 
   @media (max-width: 640px) {
     .app { padding: 10px; gap: 10px; }
     .settings { grid-template-columns: 1fr; }
     .msg { max-width: 94%; }
-    .intro h1 { font-size: 16px; }
+    .intro h1 { font-size: 19px; }
   }
 </style>
 </head>
@@ -279,18 +342,17 @@
 <div class="app">
 
   <!-- Intro -->
-  <section class="intro">
-    <h1>🤖 freemodel.dev Chat</h1>
+  <section class="card intro">
+    <h1>🍖 FirstHam</h1>
     <p>
-      This UI connects to the <strong>freemodel.dev</strong> service and lets you chat with various AI
-      models using your <strong>own API key</strong>. Pick a provider and model, paste your key, and start chatting.
-      Anthropic requests go to <code>https://cc.freemodel.dev</code> and OpenAI requests to
-      <code>https://api.freemodel.dev</code>. Your key and chat history are stored only in this browser.
+      <strong>FirstHam</strong> is a multi-model AI chat — bring your <strong>own API key</strong> and chat with
+      Anthropic (Claude) and OpenAI models, with image &amp; file attachments. Pick a provider and model, save your
+      key, and start chatting. Your key and history are stored only in this browser.
     </p>
   </section>
 
   <!-- Settings -->
-  <section class="settings">
+  <section class="card settings">
     <div class="field">
       <label for="provider">API type</label>
       <select id="provider">
@@ -301,35 +363,46 @@
 
     <div class="field">
       <label for="model">Model / node</label>
-      <select id="model"></select>
+      <div class="row">
+        <select id="model"></select>
+        <button class="btn" id="loadModels" type="button" title="Fetch all available models for this provider">Show all</button>
+      </div>
     </div>
 
     <div class="field full">
       <label for="apiKey">API key</label>
-      <div class="key-row">
+      <div class="row">
         <input id="apiKey" type="password" placeholder="Paste your API key…" autocomplete="off" spellcheck="false" />
-        <button class="toggle-key" id="toggleKey" type="button">Show</button>
+        <button class="icon-btn" id="toggleKey" type="button" title="Show / hide key">👁</button>
+        <button class="btn brand" id="saveKey" type="button">Save</button>
+        <button class="btn danger" id="deleteKey" type="button">Delete</button>
       </div>
-      <span class="hint" id="keyHint">Stored in your browser's localStorage, per provider.</span>
+      <span class="hint" id="keyHint">Saved per provider in this browser. Click <strong>Save</strong> to store it.</span>
     </div>
   </section>
 
   <!-- Chat -->
-  <section class="chat">
+  <section class="card chat">
     <div class="messages" id="messages">
       <div class="empty" id="empty">
-        No messages yet. Choose a provider and model above, enter your API key, and send your first message.
+        No messages yet. Choose a provider &amp; model, save your API key, attach files if you like, and send your first message.
       </div>
     </div>
+
+    <div class="attach-strip" id="attachStrip" hidden></div>
+
     <div class="composer">
-      <textarea id="input" rows="1" placeholder="Type a message…  (Enter to send, Shift+Enter for newline)"></textarea>
-      <button class="primary" id="send" type="button">Send</button>
+      <input type="file" id="fileInput" multiple hidden
+        accept="image/*,application/pdf,.txt,.md,.markdown,.json,.csv,.tsv,.log,.xml,.yaml,.yml,.html,.css,.js,.ts,.py,.java,.c,.cpp,.rb,.go,.rs,.sh" />
+      <button class="icon-btn" id="attach" type="button" title="Attach files or images" aria-label="Attach files or images">📎</button>
+      <textarea id="input" rows="1" placeholder="Type a message…  (Enter to send · 📎 to attach)"></textarea>
+      <button class="btn brand" id="send" type="button">Send</button>
     </div>
   </section>
 
   <div class="toolbar">
     <span class="status" id="status"></span>
-    <button class="ghost" id="clear" type="button">Clear history</button>
+    <button class="btn danger" id="clear" type="button">Clear history</button>
   </div>
 
 </div>
@@ -339,12 +412,13 @@
 
 /* ----------------------------------------------------------------------------
  * Configuration
+ *
+ * Base URLs are RELATIVE so the page works same-origin behind the bundled relay
+ * (proxy.js), which forwards /anthropic -> cc.freemodel.dev and /openai ->
+ * api.freemodel.dev. The upstream sends no CORS headers, so a browser cannot
+ * call it directly — run via `node proxy.js`. To target a CORS-enabled endpoint
+ * instead, set baseUrl to its full https URL.
  * ------------------------------------------------------------------------- */
-// Base URLs are RELATIVE so the page works same-origin behind the bundled relay
-// (proxy.js), which forwards /anthropic -> cc.freemodel.dev and /openai ->
-// api.freemodel.dev. freemodel.dev sends no CORS headers, so a browser cannot
-// call it directly — run via `node proxy.js`. To target a CORS-enabled endpoint
-// instead, set baseUrl to its full https URL.
 const PROVIDERS = {
   anthropic: {
     label: "Anthropic (Claude)",
@@ -366,12 +440,15 @@ const PROVIDERS = {
 };
 
 const MAX_TOKENS = 4096;
+const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB per file
+const MAX_ATTACHMENTS = 10;
 
 const STORE = {
-  provider: "freemodel:provider",
-  model: (p) => `freemodel:model:${p}`,
-  key: (p) => `freemodel:key:${p}`,
-  history: "freemodel:history",
+  provider: "firstham:provider",
+  model: (p) => `firstham:model:${p}`,
+  key: (p) => `firstham:key:${p}`,
+  allModels: (p) => `firstham:allmodels:${p}`,
+  history: "firstham:history",
 };
 
 /* ----------------------------------------------------------------------------
@@ -380,11 +457,17 @@ const STORE = {
 const el = {
   provider: document.getElementById("provider"),
   model: document.getElementById("model"),
+  loadModels: document.getElementById("loadModels"),
   apiKey: document.getElementById("apiKey"),
   toggleKey: document.getElementById("toggleKey"),
+  saveKey: document.getElementById("saveKey"),
+  deleteKey: document.getElementById("deleteKey"),
   keyHint: document.getElementById("keyHint"),
   messages: document.getElementById("messages"),
   empty: document.getElementById("empty"),
+  attachStrip: document.getElementById("attachStrip"),
+  fileInput: document.getElementById("fileInput"),
+  attach: document.getElementById("attach"),
   input: document.getElementById("input"),
   send: document.getElementById("send"),
   clear: document.getElementById("clear"),
@@ -393,24 +476,50 @@ const el = {
 
 /* ----------------------------------------------------------------------------
  * State
+ * history entry: { role, content, attachments?: [{ name, mediaType, kind, data }] }
+ *   kind: 'image' | 'pdf' | 'text'   data: base64 (image/pdf) or text (text)
  * ------------------------------------------------------------------------- */
-let history = loadHistory();   // [{ role: 'user' | 'assistant', content: string }]
+let history = loadHistory();
 let isStreaming = false;
+let pending = []; // attachments staged for the next message
 
 /* ----------------------------------------------------------------------------
  * Storage helpers
  * ------------------------------------------------------------------------- */
 function loadHistory() {
   try {
-    const raw = localStorage.getItem(STORE.history);
-    const parsed = raw ? JSON.parse(raw) : [];
+    const parsed = JSON.parse(localStorage.getItem(STORE.history) || "[]");
     return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 function saveHistory() {
-  try { localStorage.setItem(STORE.history, JSON.stringify(history)); } catch {}
+  try {
+    localStorage.setItem(STORE.history, JSON.stringify(history));
+  } catch {
+    // Likely quota exceeded from large base64 attachments — persist text +
+    // attachment metadata only, dropping the heavy data payloads.
+    try {
+      const slim = history.map((m) => ({
+        role: m.role,
+        content: m.content,
+        attachments: m.attachments
+          ? m.attachments.map((a) => ({ name: a.name, mediaType: a.mediaType, kind: a.kind }))
+          : undefined,
+      }));
+      localStorage.setItem(STORE.history, JSON.stringify(slim));
+      setStatus("Attachments too large to persist — kept text only in saved history.");
+    } catch {}
+  }
+}
+
+function loadAllModels(provider) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORE.allModels(provider)) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+function saveAllModels(provider, ids) {
+  try { localStorage.setItem(STORE.allModels(provider), JSON.stringify(ids)); } catch {}
 }
 
 /* ----------------------------------------------------------------------------
@@ -439,10 +548,54 @@ function appendBubble(role, content) {
   return bubble;
 }
 
+function attachmentPreview(a) {
+  if (a.kind === "image" && a.data) {
+    const img = document.createElement("img");
+    img.className = "thumb";
+    img.src = `data:${a.mediaType};base64,${a.data}`;
+    img.alt = a.name;
+    return img;
+  }
+  const chip = document.createElement("span");
+  chip.className = "file-chip";
+  const icon = a.kind === "pdf" ? "📄" : a.kind === "image" ? "🖼" : "📎";
+  chip.textContent = `${icon} ${a.name}`;
+  return chip;
+}
+
+function renderUserMessage(m) {
+  const wrap = document.createElement("div");
+  wrap.className = "msg user";
+
+  const roleEl = document.createElement("div");
+  roleEl.className = "role";
+  roleEl.textContent = "You";
+  wrap.appendChild(roleEl);
+
+  if (m.attachments && m.attachments.length) {
+    const box = document.createElement("div");
+    box.className = "attachments";
+    for (const a of m.attachments) box.appendChild(attachmentPreview(a));
+    wrap.appendChild(box);
+  }
+  if (m.content) {
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = m.content;
+    wrap.appendChild(bubble);
+  }
+  el.messages.appendChild(wrap);
+  scrollToBottom();
+}
+
+function renderMessage(m) {
+  if (m.role === "user") renderUserMessage(m);
+  else appendBubble(m.role, m.content);
+}
+
 function renderAll() {
-  // Remove every rendered message, keep the empty placeholder node.
   [...el.messages.querySelectorAll(".msg, .typing")].forEach((n) => n.remove());
-  for (const m of history) appendBubble(m.role, m.content);
+  for (const m of history) renderMessage(m);
   updateEmptyState();
 }
 
@@ -462,35 +615,173 @@ function hideTyping() {
   if (t) t.remove();
 }
 
-function scrollToBottom() {
-  el.messages.scrollTop = el.messages.scrollHeight;
+function scrollToBottom() { el.messages.scrollTop = el.messages.scrollHeight; }
+function setStatus(text) { el.status.textContent = text || ""; }
+
+/* ----------------------------------------------------------------------------
+ * Attachment handling
+ * ------------------------------------------------------------------------- */
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+    if (isImage || isPdf) {
+      reader.onload = () => {
+        const base64 = String(reader.result).split(",")[1] || "";
+        resolve({
+          name: file.name,
+          mediaType: file.type || (isPdf ? "application/pdf" : "application/octet-stream"),
+          kind: isImage ? "image" : "pdf",
+          data: base64,
+        });
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = () => {
+        resolve({ name: file.name, mediaType: file.type || "text/plain", kind: "text", data: String(reader.result) });
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    }
+  });
 }
 
-function setStatus(text) {
-  el.status.textContent = text || "";
+async function addFiles(fileList) {
+  for (const file of [...fileList]) {
+    if (pending.length >= MAX_ATTACHMENTS) {
+      setStatus(`Attachment limit reached (${MAX_ATTACHMENTS}).`);
+      break;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      setStatus(`"${file.name}" is too large (max 25 MB).`);
+      continue;
+    }
+    try { pending.push(await readFile(file)); }
+    catch { setStatus(`Could not read "${file.name}".`); }
+  }
+  renderAttachStrip();
+}
+
+function renderAttachStrip() {
+  el.attachStrip.innerHTML = "";
+  if (!pending.length) { el.attachStrip.hidden = true; return; }
+  el.attachStrip.hidden = false;
+
+  pending.forEach((a, i) => {
+    const item = document.createElement("div");
+    item.className = "attach-item";
+
+    if (a.kind === "image" && a.data) {
+      const img = document.createElement("img");
+      img.src = `data:${a.mediaType};base64,${a.data}`;
+      img.alt = a.name;
+      item.appendChild(img);
+    } else {
+      const icon = document.createElement("span");
+      icon.textContent = a.kind === "pdf" ? "📄" : "📎";
+      item.appendChild(icon);
+    }
+
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = a.name;
+    item.appendChild(name);
+
+    const rm = document.createElement("button");
+    rm.className = "rm";
+    rm.type = "button";
+    rm.textContent = "×";
+    rm.title = "Remove";
+    rm.addEventListener("click", () => { pending.splice(i, 1); renderAttachStrip(); });
+    item.appendChild(rm);
+
+    el.attachStrip.appendChild(item);
+  });
 }
 
 /* ----------------------------------------------------------------------------
  * Settings UI wiring
  * ------------------------------------------------------------------------- */
+function currentProvider() { return el.provider.value; }
+
 function populateModels(provider, preferred) {
-  const models = PROVIDERS[provider].models;
+  const curated = PROVIDERS[provider].models;
+  const all = loadAllModels(provider);
   el.model.innerHTML = "";
-  for (const m of models) {
-    const opt = document.createElement("option");
-    opt.value = m.id;
-    opt.textContent = m.label;
-    el.model.appendChild(opt);
+  const seen = new Set();
+
+  for (const m of curated) {
+    const o = document.createElement("option");
+    o.value = m.id;
+    o.textContent = m.label;
+    el.model.appendChild(o);
+    seen.add(m.id);
   }
+
+  const extra = all.filter((id) => !seen.has(id));
+  if (extra.length) {
+    const grp = document.createElement("optgroup");
+    grp.label = "All models";
+    for (const id of extra) {
+      const o = document.createElement("option");
+      o.value = id;
+      o.textContent = id;
+      grp.appendChild(o);
+    }
+    el.model.appendChild(grp);
+  }
+
   const saved = preferred || localStorage.getItem(STORE.model(provider));
-  el.model.value = models.some((m) => m.id === saved) ? saved : models[0].id;
+  el.model.value = [...el.model.options].some((o) => o.value === saved) ? saved : curated[0].id;
 }
 
 function loadKeyForProvider(provider) {
   el.apiKey.value = localStorage.getItem(STORE.key(provider)) || "";
+  el.keyHint.classList.remove("saved");
+  el.keyHint.innerHTML = el.apiKey.value
+    ? "Key loaded from this browser."
+    : 'No key saved. Click <strong>Save</strong> to store it.';
 }
 
-function currentProvider() { return el.provider.value; }
+async function showAllModels() {
+  const provider = currentProvider();
+  const apiKey = el.apiKey.value.trim();
+  if (!apiKey) { setStatus("Enter and save your API key first to load all models."); return; }
+
+  setStatus(`Loading models for ${PROVIDERS[provider].label}…`);
+  el.loadModels.disabled = true;
+  try {
+    const ids = await fetchAllModels(provider, apiKey);
+    saveAllModels(provider, ids);
+    populateModels(provider);
+    setStatus(`Loaded ${ids.length} model(s) for ${PROVIDERS[provider].label}.`);
+  } catch (err) {
+    setStatus(err.message || "Could not load models.");
+  } finally {
+    el.loadModels.disabled = false;
+  }
+}
+
+async function fetchAllModels(provider, apiKey) {
+  const base = PROVIDERS[provider].baseUrl;
+  const headers = provider === "anthropic"
+    ? { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" }
+    : { "Authorization": `Bearer ${apiKey}` };
+
+  let res;
+  try { res = await fetch(`${base}/v1/models`, { headers }); }
+  catch { throw new Error("Network error loading models — is the relay (proxy.js) running?"); }
+  if (!res.ok) throw new Error(friendlyError(res.status).split("\n")[0]);
+
+  const data = await res.json();
+  const list = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+  const ids = list.map((m) => (typeof m === "string" ? m : m.id)).filter(Boolean);
+  if (!ids.length) throw new Error("No models returned by the provider.");
+  return ids;
+}
 
 /* ----------------------------------------------------------------------------
  * Networking — request building + streaming
@@ -501,7 +792,7 @@ function friendlyError(status, detail) {
     401: "Unauthorized (401) — your API key is missing or invalid.",
     403: "Forbidden (403) — your API key lacks access to this model.",
     404: "Not found (404) — check the endpoint or model name.",
-    413: "Request too large (413) — shorten the conversation and retry.",
+    413: "Request too large (413) — shorten the conversation or attachments and retry.",
     429: "Rate limited (429) — too many requests or quota exceeded. Wait a moment and try again.",
     500: "Server error (500) — the model service had a problem. Try again shortly.",
     502: "Bad gateway (502) — the service is temporarily unavailable.",
@@ -513,7 +804,37 @@ function friendlyError(status, detail) {
   return msg;
 }
 
-/** Build fetch options for the selected provider. */
+/** Convert a stored history entry into the selected provider's message format. */
+function toProviderMessage(provider, m) {
+  if (m.role === "assistant") return { role: "assistant", content: m.content || "" };
+
+  const atts = (m.attachments || []).filter((a) => a.data); // metadata-only (post-refresh) is skipped
+  if (!atts.length) return { role: "user", content: m.content || "" };
+
+  if (provider === "anthropic") {
+    const parts = [];
+    for (const a of atts) {
+      if (a.kind === "image") parts.push({ type: "image", source: { type: "base64", media_type: a.mediaType, data: a.data } });
+      else if (a.kind === "pdf") parts.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: a.data } });
+      else parts.push({ type: "text", text: `Attached file "${a.name}":\n\n${a.data}` });
+    }
+    if (m.content) parts.push({ type: "text", text: m.content });
+    if (!parts.length) parts.push({ type: "text", text: "" });
+    return { role: "user", content: parts };
+  }
+
+  // OpenAI
+  const parts = [];
+  if (m.content) parts.push({ type: "text", text: m.content });
+  for (const a of atts) {
+    if (a.kind === "image") parts.push({ type: "image_url", image_url: { url: `data:${a.mediaType};base64,${a.data}` } });
+    else if (a.kind === "pdf") parts.push({ type: "file", file: { filename: a.name, file_data: `data:application/pdf;base64,${a.data}` } });
+    else parts.push({ type: "text", text: `Attached file "${a.name}":\n\n${a.data}` });
+  }
+  if (!parts.length) parts.push({ type: "text", text: "" });
+  return { role: "user", content: parts };
+}
+
 function buildRequest(provider, model, apiKey, messages) {
   const cfg = PROVIDERS[provider];
   if (provider === "anthropic") {
@@ -527,50 +848,30 @@ function buildRequest(provider, model, apiKey, messages) {
           "anthropic-version": "2023-06-01",
           "anthropic-dangerous-direct-browser-access": "true",
         },
-        body: JSON.stringify({
-          model,
-          max_tokens: MAX_TOKENS,
-          stream: true,
-          messages,
-        }),
+        body: JSON.stringify({ model, max_tokens: MAX_TOKENS, stream: true, messages }),
       },
     };
   }
-  // OpenAI
   return {
     url: `${cfg.baseUrl}/v1/chat/completions`,
     options: {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        stream: true,
-        messages,
-      }),
+      headers: { "content-type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, stream: true, messages }),
     },
   };
 }
 
-/** Extract a streamed text delta from a parsed SSE JSON object. */
 function extractDelta(provider, obj) {
   if (provider === "anthropic") {
-    if (obj.type === "error") {
-      throw new Error(obj.error?.message || "Anthropic stream error");
-    }
-    if (obj.type === "content_block_delta" && obj.delta?.type === "text_delta") {
-      return obj.delta.text || "";
-    }
+    if (obj.type === "error") throw new Error(obj.error?.message || "Anthropic stream error");
+    if (obj.type === "content_block_delta" && obj.delta?.type === "text_delta") return obj.delta.text || "";
     return "";
   }
-  // OpenAI
   if (obj.error) throw new Error(obj.error.message || "OpenAI stream error");
   return obj.choices?.[0]?.delta?.content || "";
 }
 
-/** Extract the full text from a non-streamed JSON response. */
 function extractFull(provider, data) {
   if (provider === "anthropic") {
     return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
@@ -578,10 +879,6 @@ function extractFull(provider, data) {
   return data.choices?.[0]?.message?.content || "";
 }
 
-/**
- * Send the conversation and stream the reply.
- * onText(delta) is called for each chunk of assistant text.
- */
 async function streamReply(provider, model, apiKey, messages, onText, signal) {
   const { url, options } = buildRequest(provider, model, apiKey, messages);
   options.signal = signal;
@@ -592,8 +889,8 @@ async function streamReply(provider, model, apiKey, messages, onText, signal) {
   } catch (err) {
     if (err.name === "AbortError") throw err;
     throw new Error(
-      "Network error — could not reach the service. This is often a CORS or connectivity issue.\n\n" +
-      "Verify the endpoint is reachable and allows browser requests."
+      "Network error — could not reach the service. Make sure the relay (proxy.js) is running, " +
+      "or that the endpoint allows browser requests."
     );
   }
 
@@ -601,26 +898,20 @@ async function streamReply(provider, model, apiKey, messages, onText, signal) {
     let detail = "";
     try {
       const errText = await response.text();
-      try {
-        const j = JSON.parse(errText);
-        detail = j.error?.message || j.message || errText;
-      } catch {
-        detail = errText;
-      }
+      try { const j = JSON.parse(errText); detail = j.error?.message || j.message || errText; }
+      catch { detail = errText; }
     } catch {}
     throw new Error(friendlyError(response.status, (detail || "").slice(0, 500)));
   }
 
   const contentType = response.headers.get("content-type") || "";
 
-  // Non-streaming fallback: server returned a plain JSON response.
   if (!response.body || !contentType.includes("text/event-stream")) {
     const data = await response.json();
     onText(extractFull(provider, data));
     return;
   }
 
-  // Stream Server-Sent Events.
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -634,7 +925,6 @@ async function streamReply(provider, model, apiKey, messages, onText, signal) {
     while ((nl = buffer.indexOf("\n")) >= 0) {
       const line = buffer.slice(0, nl).trim();
       buffer = buffer.slice(nl + 1);
-
       if (!line || line.startsWith(":") || line.startsWith("event:")) continue;
       if (!line.startsWith("data:")) continue;
 
@@ -643,7 +933,6 @@ async function streamReply(provider, model, apiKey, messages, onText, signal) {
 
       let obj;
       try { obj = JSON.parse(payload); } catch { continue; }
-
       const delta = extractDelta(provider, obj);
       if (delta) onText(delta);
     }
@@ -659,28 +948,32 @@ async function send() {
   if (isStreaming) return;
 
   const text = el.input.value.trim();
-  if (!text) return;
+  if (!text && !pending.length) return;
 
   const provider = currentProvider();
   const model = el.model.value;
   const apiKey = el.apiKey.value.trim();
 
   if (!apiKey) {
-    appendBubble("error", "Please enter your API key first.");
+    appendBubble("error", "Please enter and save your API key first.");
     return;
   }
 
-  // Add the user's message.
-  history.push({ role: "user", content: text });
-  appendBubble("user", text);
+  const attachments = pending.slice();
+  const userMsg = { role: "user", content: text };
+  if (attachments.length) userMsg.attachments = attachments;
+
+  history.push(userMsg);
+  renderUserMessage(userMsg);
   saveHistory();
   updateEmptyState();
 
   el.input.value = "";
   autoSize();
+  pending = [];
+  renderAttachStrip();
 
-  // Snapshot the conversation to send (role/content only).
-  const messages = history.map((m) => ({ role: m.role, content: m.content }));
+  const messages = history.map((m) => toProviderMessage(provider, m));
 
   setStreaming(true);
   showTyping();
@@ -704,7 +997,6 @@ async function send() {
 
   try {
     await streamReply(provider, model, apiKey, messages, onText, abortController.signal);
-
     hideTyping();
     if (assistantBubble) assistantBubble.classList.remove("cursor");
 
@@ -717,16 +1009,10 @@ async function send() {
   } catch (err) {
     hideTyping();
     if (assistantBubble) {
-      // Keep whatever streamed so far, but persist it so it isn't lost.
       assistantBubble.classList.remove("cursor");
-      if (assistantText.trim()) {
-        history.push({ role: "assistant", content: assistantText });
-        saveHistory();
-      }
+      if (assistantText.trim()) { history.push({ role: "assistant", content: assistantText }); saveHistory(); }
     }
-    if (err.name !== "AbortError") {
-      appendBubble("error", err.message || "Something went wrong.");
-    }
+    if (err.name !== "AbortError") appendBubble("error", err.message || "Something went wrong.");
   } finally {
     abortController = null;
     setStreaming(false);
@@ -751,18 +1037,23 @@ function autoSize() {
 
 el.input.addEventListener("input", autoSize);
 el.input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    send();
-  }
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
 });
 el.send.addEventListener("click", send);
+
+el.attach.addEventListener("click", () => el.fileInput.click());
+el.fileInput.addEventListener("change", () => {
+  if (el.fileInput.files && el.fileInput.files.length) addFiles(el.fileInput.files);
+  el.fileInput.value = ""; // allow re-selecting the same file
+});
 
 el.clear.addEventListener("click", () => {
   if (isStreaming && abortController) abortController.abort();
   if (!history.length || confirm("Clear the entire chat history?")) {
     history = [];
+    pending = [];
     saveHistory();
+    renderAttachStrip();
     renderAll();
     setStatus("");
   }
@@ -782,17 +1073,29 @@ el.model.addEventListener("change", () => {
   localStorage.setItem(STORE.model(currentProvider()), el.model.value);
 });
 
-el.apiKey.addEventListener("input", () => {
+el.loadModels.addEventListener("click", showAllModels);
+
+el.saveKey.addEventListener("click", () => {
   const p = currentProvider();
-  localStorage.setItem(STORE.key(p), el.apiKey.value.trim());
-  el.keyHint.textContent = "Saved in this browser ✓";
+  const val = el.apiKey.value.trim();
+  if (!val) { setStatus("Nothing to save — the key field is empty."); return; }
+  localStorage.setItem(STORE.key(p), val);
+  el.keyHint.textContent = "Key saved in this browser ✓";
   el.keyHint.classList.add("saved");
+});
+
+el.deleteKey.addEventListener("click", () => {
+  const p = currentProvider();
+  localStorage.removeItem(STORE.key(p));
+  el.apiKey.value = "";
+  el.keyHint.classList.remove("saved");
+  el.keyHint.textContent = "Key deleted from this browser.";
 });
 
 el.toggleKey.addEventListener("click", () => {
   const show = el.apiKey.type === "password";
   el.apiKey.type = show ? "text" : "password";
-  el.toggleKey.textContent = show ? "Hide" : "Show";
+  el.toggleKey.textContent = show ? "🙈" : "👁";
 });
 
 /* ----------------------------------------------------------------------------
@@ -806,6 +1109,7 @@ function init() {
   populateModels(p);
   loadKeyForProvider(p);
   renderAll();
+  renderAttachStrip();
   autoSize();
   el.input.focus();
 }
