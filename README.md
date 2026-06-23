@@ -6,12 +6,9 @@ relay (`proxy.js`) handles the network so the browser can reach the providers.
 
 ## Features
 
-- **Two providers**
-  - **Anthropic (Claude)** — relayed to `https://cc.freemodel.dev`
-  - **OpenAI** — relayed to `https://api.freemodel.dev`
+- **OpenAI provider** — relayed to `https://api.freemodel.dev`
 - **Model / node selection** with a built-in tier list, plus a **“Show all”** button that fetches
   every available model from the provider's `/v1/models` endpoint.
-  - Anthropic: `claude-t0` (free), `claude-t1` (requires top-up)
   - OpenAI: `default` (free), `openai-t1-sg`, `openai-t2-sg` (require top-up)
 - **API key management** — **Save** and **Delete** buttons, a show/hide toggle, stored per
   provider in `localStorage`.
@@ -36,7 +33,7 @@ node proxy.js
 
 Then open **http://localhost:8787** in your browser. (Requires Node.js — no `npm install`.)
 
-1. Choose an **API type** (Anthropic or OpenAI) and a **model / node** (or click **Show all**).
+1. Choose a **model / node** (or click **Show all**).
 2. Paste your **API key** and click **Save**.
 3. Optionally attach files/images with 📎.
 4. Type a message and press **Enter** (Shift+Enter for a newline) to send.
@@ -57,19 +54,13 @@ to its full `https://…` URL.
 
 When running through `proxy.js`, the UI calls same-origin paths that the relay forwards:
 
-### Anthropic
-- **Endpoint:** `/anthropic/v1/messages` → `https://cc.freemodel.dev/v1/messages`
-- **Headers:** `x-api-key: {API_KEY}`, `anthropic-version: 2023-06-01`
-- **Body:** Claude Messages format — `{ model, max_tokens, stream, messages: [...] }`
-- **Attachments:** images as `image` blocks, PDFs as `document` blocks, text files inlined as text.
-
 ### OpenAI
 - **Endpoint:** `/openai/v1/chat/completions` → `https://api.freemodel.dev/v1/chat/completions`
 - **Headers:** `Authorization: Bearer {API_KEY}`
 - **Body:** OpenAI Chat Completions format — `{ model, stream, messages: [...] }`
 - **Attachments:** images as `image_url` parts, PDFs as `file` parts, text files inlined as text.
 
-The selected **model / node** value (e.g. `claude-t0`, `openai-t1-sg`) is sent as the `model`
+The selected **model / node** value (e.g. `openai-t1-sg`) is sent as the `model`
 field in the request body.
 
 ## Notes

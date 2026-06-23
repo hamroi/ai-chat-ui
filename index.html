@@ -330,6 +330,68 @@
   }
   .toolbar .status { font-size: 12px; color: var(--muted); }
 
+  /* ---- Model browser modal ---- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 41, 55, 0.45);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 50;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal {
+    width: 100%;
+    max-width: 560px;
+    max-height: 84dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 18px;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .modal-head h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--brand1), var(--brand2), var(--brand3));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .modal-sub { color: var(--muted); font-size: 12.5px; margin: 4px 0 10px; }
+  .modal-body { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .model-prov {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--brand2);
+    margin: 10px 0 2px;
+  }
+  .model-prov:first-child { margin-top: 0; }
+  .m-note { font-size: 12px; color: var(--muted); padding: 2px 2px 4px; }
+  .model-row {
+    text-align: left;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: #fff;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+  .model-row:hover { border-color: var(--brand2); background: var(--soft); }
+  .model-row.selected { border-color: var(--brand2); box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15); }
+  .model-row .m-name { font-weight: 700; font-size: 14px; color: var(--ink); }
+  .model-row .m-id { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--muted); }
+  .model-row .m-meta { font-size: 11.5px; color: var(--muted); }
+
   @media (max-width: 640px) {
     .app { padding: 10px; gap: 10px; }
     .settings { grid-template-columns: 1fr; }
@@ -346,7 +408,7 @@
     <h1>🍖 FirstHam</h1>
     <p>
       <strong>FirstHam</strong> is a multi-model AI chat — bring your <strong>own API key</strong> and chat with
-      Anthropic (Claude) and OpenAI models, with image &amp; file attachments. Pick a provider and model, save your
+      OpenAI models, with image &amp; file attachments. Pick a model, save your
       key, and start chatting. Your key and history are stored only in this browser.
     </p>
   </section>
@@ -356,7 +418,6 @@
     <div class="field">
       <label for="provider">API type</label>
       <select id="provider">
-        <option value="anthropic">Anthropic (Claude)</option>
         <option value="openai">OpenAI</option>
       </select>
     </div>
@@ -365,7 +426,7 @@
       <label for="model">Model / node</label>
       <div class="row">
         <select id="model"></select>
-        <button class="btn" id="loadModels" type="button" title="Fetch all available models for this provider">Show all</button>
+        <button class="btn" id="loadModels" type="button" title="Fetch all available models for this provider into the list">Show all</button>
       </div>
     </div>
 
@@ -407,6 +468,18 @@
 
 </div>
 
+<!-- Model browser: every model across all providers, with details -->
+<div class="modal-overlay" id="modelModal" hidden>
+  <div class="modal card">
+    <div class="modal-head">
+      <h2>All models</h2>
+      <button class="icon-btn" id="modelModalClose" type="button" title="Close">✕</button>
+    </div>
+    <div class="modal-sub" id="modelModalSub"></div>
+    <div class="modal-body" id="modelList"></div>
+  </div>
+</div>
+
 <script>
 "use strict";
 
@@ -414,32 +487,24 @@
  * Configuration
  *
  * Base URLs are RELATIVE so the page works same-origin behind the bundled relay
- * (proxy.js), which forwards /anthropic -> cc.freemodel.dev and /openai ->
- * api.freemodel.dev. The upstream sends no CORS headers, so a browser cannot
+ * (proxy.js), which forwards /openai -> api.freemodel.dev. The upstream sends
+ * no CORS headers, so a browser cannot
  * call it directly — run via `node proxy.js`. To target a CORS-enabled endpoint
  * instead, set baseUrl to its full https URL.
  * ------------------------------------------------------------------------- */
 const PROVIDERS = {
-  anthropic: {
-    label: "Anthropic (Claude)",
-    baseUrl: "/anthropic",
-    models: [
-      { id: "claude-t0", label: "claude-t0 (free)" },
-      { id: "claude-t1", label: "claude-t1 (requires top-up)" },
-    ],
-  },
   openai: {
     label: "OpenAI",
     baseUrl: "/openai",
     models: [
-      { id: "default", label: "default (free)" },
-      { id: "openai-t1-sg", label: "openai-t1-sg (requires top-up)" },
-      { id: "openai-t2-sg", label: "openai-t2-sg (requires top-up)" },
+      { id: "gpt-5.5", label: "gpt-5.5" },
+      { id: "gpt-5.4", label: "gpt-5.4" },
+      { id: "gpt-5.4-mini", label: "gpt-5.4-mini" },
+      { id: "gpt-5.3-codex", label: "gpt-5.3-codex" },
     ],
   },
 };
 
-const MAX_TOKENS = 4096;
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB per file
 const MAX_ATTACHMENTS = 10;
 
@@ -458,6 +523,10 @@ const el = {
   provider: document.getElementById("provider"),
   model: document.getElementById("model"),
   loadModels: document.getElementById("loadModels"),
+  modelModal: document.getElementById("modelModal"),
+  modelModalClose: document.getElementById("modelModalClose"),
+  modelModalSub: document.getElementById("modelModalSub"),
+  modelList: document.getElementById("modelList"),
   apiKey: document.getElementById("apiKey"),
   toggleKey: document.getElementById("toggleKey"),
   saveKey: document.getElementById("saveKey"),
@@ -766,10 +835,13 @@ async function showAllModels() {
 }
 
 async function fetchAllModels(provider, apiKey) {
+  return (await fetchAllModelObjects(provider, apiKey)).map((m) => m.id);
+}
+
+/** Like fetchAllModels but returns the full model objects so callers can show details. */
+async function fetchAllModelObjects(provider, apiKey) {
   const base = PROVIDERS[provider].baseUrl;
-  const headers = provider === "anthropic"
-    ? { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" }
-    : { "Authorization": `Bearer ${apiKey}` };
+  const headers = { "Authorization": `Bearer ${apiKey}` };
 
   let res;
   try { res = await fetch(`${base}/v1/models`, { headers }); }
@@ -778,10 +850,128 @@ async function fetchAllModels(provider, apiKey) {
 
   const data = await res.json();
   const list = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
-  const ids = list.map((m) => (typeof m === "string" ? m : m.id)).filter(Boolean);
-  if (!ids.length) throw new Error("No models returned by the provider.");
-  return ids;
+  const objs = list.map((m) => (typeof m === "string" ? { id: m } : m)).filter((m) => m && m.id);
+  if (!objs.length) throw new Error("No models returned by the provider.");
+  return objs;
 }
+
+/* ----------------------------------------------------------------------------
+ * Model browser — every model across all providers, with details
+ * ------------------------------------------------------------------------- */
+async function openModelBrowser() {
+  el.modelModal.hidden = false;
+  el.modelList.innerHTML = "";
+  el.modelModalSub.textContent = "Loading models…";
+
+  const providers = Object.keys(PROVIDERS);
+  let total = 0;
+
+  for (const provider of providers) {
+    const cfg = PROVIDERS[provider];
+    const apiKey = (localStorage.getItem(STORE.key(provider)) || "").trim();
+
+    const head = document.createElement("div");
+    head.className = "model-prov";
+    head.textContent = cfg.label;
+    el.modelList.appendChild(head);
+
+    let models = null;
+    if (apiKey) {
+      try {
+        models = await fetchAllModelObjects(provider, apiKey);
+        saveAllModels(provider, models.map((m) => m.id));
+      } catch (err) {
+        appendNote(err.message || "Could not load models.");
+      }
+    } else {
+      appendNote("No API key saved — showing built-in models. Save a key to load every model.");
+    }
+
+    // Fall back to curated + previously-cached ids when the live fetch is unavailable.
+    if (!models) {
+      const ids = [...new Set([...cfg.models.map((m) => m.id), ...loadAllModels(provider)])];
+      models = ids.map((id) => ({ id }));
+    }
+
+    const curated = new Map(cfg.models.map((m) => [m.id, m.label]));
+    for (const m of models) {
+      el.modelList.appendChild(buildModelRow(provider, m, curated));
+      total++;
+    }
+  }
+
+  el.modelModalSub.textContent = total
+    ? `${total} model(s) across ${providers.length} providers. Click one to use it.`
+    : "No models to show.";
+
+  function appendNote(text) {
+    const note = document.createElement("div");
+    note.className = "m-note";
+    note.textContent = text;
+    el.modelList.appendChild(note);
+  }
+}
+
+function buildModelRow(provider, m, curated) {
+  const isCurated = curated.has(m.id);
+  const title = m.display_name || (isCurated ? curated.get(m.id) : m.id);
+
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "model-row";
+  if (provider === currentProvider() && m.id === el.model.value) row.classList.add("selected");
+
+  const name = document.createElement("div");
+  name.className = "m-name";
+  name.textContent = title;
+  row.appendChild(name);
+
+  // Show the raw id on its own line unless the title already is the id.
+  if (title !== m.id) {
+    const idEl = document.createElement("div");
+    idEl.className = "m-id";
+    idEl.textContent = m.id;
+    row.appendChild(idEl);
+  }
+
+  const bits = [];
+  if (isCurated) bits.push(/free/i.test(curated.get(m.id)) ? "built-in · free" : "built-in");
+  if (m.owned_by) bits.push(`owner: ${m.owned_by}`);
+  const created = m.created_at
+    ? String(m.created_at).slice(0, 10)
+    : typeof m.created === "number"
+      ? new Date(m.created * 1000).toISOString().slice(0, 10)
+      : null;
+  if (created) bits.push(created);
+  if (bits.length) {
+    const meta = document.createElement("div");
+    meta.className = "m-meta";
+    meta.textContent = bits.join(" · ");
+    row.appendChild(meta);
+  }
+
+  row.addEventListener("click", () => selectModelFromBrowser(provider, m.id));
+  return row;
+}
+
+function selectModelFromBrowser(provider, id) {
+  el.provider.value = provider;
+  localStorage.setItem(STORE.provider, provider);
+  loadKeyForProvider(provider);
+  populateModels(provider, id);
+  if (![...el.model.options].some((o) => o.value === id)) {
+    const o = document.createElement("option");
+    o.value = id;
+    o.textContent = id;
+    el.model.appendChild(o);
+  }
+  el.model.value = id;
+  localStorage.setItem(STORE.model(provider), id);
+  closeModelBrowser();
+  setStatus(`Selected ${id} · ${PROVIDERS[provider].label}.`);
+}
+
+function closeModelBrowser() { el.modelModal.hidden = true; }
 
 /* ----------------------------------------------------------------------------
  * Networking — request building + streaming
@@ -811,19 +1001,6 @@ function toProviderMessage(provider, m) {
   const atts = (m.attachments || []).filter((a) => a.data); // metadata-only (post-refresh) is skipped
   if (!atts.length) return { role: "user", content: m.content || "" };
 
-  if (provider === "anthropic") {
-    const parts = [];
-    for (const a of atts) {
-      if (a.kind === "image") parts.push({ type: "image", source: { type: "base64", media_type: a.mediaType, data: a.data } });
-      else if (a.kind === "pdf") parts.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: a.data } });
-      else parts.push({ type: "text", text: `Attached file "${a.name}":\n\n${a.data}` });
-    }
-    if (m.content) parts.push({ type: "text", text: m.content });
-    if (!parts.length) parts.push({ type: "text", text: "" });
-    return { role: "user", content: parts };
-  }
-
-  // OpenAI
   const parts = [];
   if (m.content) parts.push({ type: "text", text: m.content });
   for (const a of atts) {
@@ -837,21 +1014,6 @@ function toProviderMessage(provider, m) {
 
 function buildRequest(provider, model, apiKey, messages) {
   const cfg = PROVIDERS[provider];
-  if (provider === "anthropic") {
-    return {
-      url: `${cfg.baseUrl}/v1/messages`,
-      options: {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({ model, max_tokens: MAX_TOKENS, stream: true, messages }),
-      },
-    };
-  }
   return {
     url: `${cfg.baseUrl}/v1/chat/completions`,
     options: {
@@ -863,19 +1025,11 @@ function buildRequest(provider, model, apiKey, messages) {
 }
 
 function extractDelta(provider, obj) {
-  if (provider === "anthropic") {
-    if (obj.type === "error") throw new Error(obj.error?.message || "Anthropic stream error");
-    if (obj.type === "content_block_delta" && obj.delta?.type === "text_delta") return obj.delta.text || "";
-    return "";
-  }
   if (obj.error) throw new Error(obj.error.message || "OpenAI stream error");
   return obj.choices?.[0]?.delta?.content || "";
 }
 
 function extractFull(provider, data) {
-  if (provider === "anthropic") {
-    return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
-  }
   return data.choices?.[0]?.message?.content || "";
 }
 
@@ -983,6 +1137,16 @@ async function send() {
   let assistantBubble = null;
   let assistantText = "";
 
+  // Coalesce token deltas into one DOM write per frame. Updating textContent and
+  // forcing a reflow on every token makes long replies lag behind the stream.
+  let flushScheduled = false;
+  const flush = () => {
+    flushScheduled = false;
+    if (!assistantBubble) return;
+    assistantBubble.textContent = assistantText;
+    scrollToBottom();
+  };
+
   const onText = (delta) => {
     if (!delta) return;
     if (!assistantBubble) {
@@ -991,12 +1155,15 @@ async function send() {
       assistantBubble.classList.add("cursor");
     }
     assistantText += delta;
-    assistantBubble.textContent = assistantText;
-    scrollToBottom();
+    if (!flushScheduled) {
+      flushScheduled = true;
+      requestAnimationFrame(flush);
+    }
   };
 
   try {
     await streamReply(provider, model, apiKey, messages, onText, abortController.signal);
+    flush(); // paint any tokens buffered since the last frame
     hideTyping();
     if (assistantBubble) assistantBubble.classList.remove("cursor");
 
@@ -1007,6 +1174,7 @@ async function send() {
       appendBubble("error", "The model returned an empty response.");
     }
   } catch (err) {
+    flush(); // show whatever streamed before the error/abort
     hideTyping();
     if (assistantBubble) {
       assistantBubble.classList.remove("cursor");
@@ -1074,6 +1242,9 @@ el.model.addEventListener("change", () => {
 });
 
 el.loadModels.addEventListener("click", showAllModels);
+el.modelModalClose.addEventListener("click", closeModelBrowser);
+el.modelModal.addEventListener("click", (e) => { if (e.target === el.modelModal) closeModelBrowser(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !el.modelModal.hidden) closeModelBrowser(); });
 
 el.saveKey.addEventListener("click", () => {
   const p = currentProvider();

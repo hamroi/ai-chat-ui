@@ -18,9 +18,12 @@ const path = require("path");
 
 const PORT = process.env.PORT || 8787;
 
+// Reuse upstream TLS connections so each message doesn't pay for a fresh
+// handshake (a big chunk of time-to-first-token on every send).
+const agent = new https.Agent({ keepAlive: true });
+
 // Path prefix -> upstream base URL.
 const TARGETS = {
-  "/anthropic": "https://cc.freemodel.dev",
   "/openai": "https://api.freemodel.dev",
 };
 
@@ -45,16 +48,23 @@ const server = http.createServer((req, res) => {
   if (prefix) {
     const target = new URL(TARGETS[prefix] + req.url.slice(prefix.length));
 
-    // Copy the browser's headers (x-api-key, authorization, anthropic-version,
-    // content-type, …) but rewrite Host and drop origin/referer so the upstream
+    // Send tokens to the browser the instant they arrive instead of letting
+    // Nagle's algorithm batch the small SSE writes (~40ms stalls per chunk).
+    req.socket.setNoDelay(true);
+
+    // Copy the browser's headers (authorization, content-type, …) but rewrite
+    // Host and drop origin/referer so the upstream
     // doesn't reject based on them.
     const headers = { ...req.headers, host: target.host };
     delete headers["origin"];
     delete headers["referer"];
+    // Ask upstream for an uncompressed stream: gzip/br buffer chunks before
+    // flushing, which delays SSE tokens. Identity lets them stream immediately.
+    headers["accept-encoding"] = "identity";
 
     const proxyReq = https.request(
       target,
-      { method: req.method, headers },
+      { method: req.method, headers, agent },
       (proxyRes) => {
         // Stream the upstream response straight back (preserves SSE streaming).
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
@@ -92,7 +102,6 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`FirstHam is running.`);
   console.log(`  Open:  http://localhost:${PORT}`);
-  console.log(`  Relay: /anthropic -> ${TARGETS["/anthropic"]}`);
-  console.log(`         /openai    -> ${TARGETS["/openai"]}`);
+  console.log(`  Relay: /openai -> ${TARGETS["/openai"]}`);
   console.log(`Press Ctrl+C to stop.`);
 });
