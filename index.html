@@ -340,10 +340,15 @@
 /* ----------------------------------------------------------------------------
  * Configuration
  * ------------------------------------------------------------------------- */
+// Base URLs are RELATIVE so the page works same-origin behind the bundled relay
+// (proxy.js), which forwards /anthropic -> cc.freemodel.dev and /openai ->
+// api.freemodel.dev. freemodel.dev sends no CORS headers, so a browser cannot
+// call it directly — run via `node proxy.js`. To target a CORS-enabled endpoint
+// instead, set baseUrl to its full https URL.
 const PROVIDERS = {
   anthropic: {
     label: "Anthropic (Claude)",
-    baseUrl: "https://cc.freemodel.dev",
+    baseUrl: "/anthropic",
     models: [
       { id: "claude-t0", label: "claude-t0 (free)" },
       { id: "claude-t1", label: "claude-t1 (requires top-up)" },
@@ -351,7 +356,7 @@ const PROVIDERS = {
   },
   openai: {
     label: "OpenAI",
-    baseUrl: "https://api.freemodel.dev",
+    baseUrl: "/openai",
     models: [
       { id: "default", label: "default (free)" },
       { id: "openai-t1-sg", label: "openai-t1-sg (requires top-up)" },
