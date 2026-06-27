@@ -6,13 +6,18 @@ relay (`proxy.js`) handles the network so the browser can reach the providers.
 
 ## Features
 
-- **OpenAI provider** — relayed to `https://api.freemodel.dev`
+- **Two providers**
+  - **Anthropic (Claude)** — relayed to `https://cc.freemodel.dev`
+  - **OpenAI** — relayed to `https://api.freemodel.dev`
 - **Model / node selection** with a built-in tier list, plus a **“Show all”** button that fetches
   every available model from the provider's `/v1/models` endpoint.
-  - OpenAI: `default` (free), `openai-t1-sg`, `openai-t2-sg` (require top-up)
+- **Configurable Base URL** — set a provider's base URL to any platform's **origin** (e.g.
+  `https://api.anthropic.com`); the correct api path is appended **automatically** per api type
+  (OpenAI → `/v1/chat/completions`, Anthropic → `/v1/messages`). Defaults to the bundled relay
+  path. Saved per provider in `localStorage`.
 - **API key management** — **Save** and **Delete** buttons, a show/hide toggle, stored per
   provider in `localStorage`.
-- **File & image attachments** — attach images, PDFs, and text files with the 📎 button.
+- **File & image attachments** — attach images, PDFs, and text files with the Attach button.
   Images render as thumbnails; everything is sent in the correct format per provider.
 - **Streaming chat** via Server-Sent Events for both providers, with a live typing indicator.
 - **Persistent history** — your conversation is saved in `localStorage` and restored on refresh.
@@ -35,7 +40,7 @@ Then open **http://localhost:8787** in your browser. (Requires Node.js — no `n
 
 1. Choose a **model / node** (or click **Show all**).
 2. Paste your **API key** and click **Save**.
-3. Optionally attach files/images with 📎.
+3. Optionally attach files/images with the **Attach** button.
 4. Type a message and press **Enter** (Shift+Enter for a newline) to send.
 
 > Your API key and chat history never leave your machine — they're stored in `localStorage`
@@ -47,12 +52,18 @@ Then open **http://localhost:8787** in your browser. (Requires Node.js — no `n
 You can, but API calls will fail with a "Network error" because the browser's CORS preflight
 to the upstream is rejected (HTTP 403, no `Access-Control-Allow-Origin`). The relay is the
 practical way to use a browser UI against these endpoints. To point the UI at a different,
-CORS-enabled endpoint, set each provider's `baseUrl` (top of the `<script>` in `index.html`)
-to its full `https://…` URL.
+CORS-enabled endpoint, set the **Base URL** field in the settings (or edit a provider's `baseUrl`
+at the top of the `<script>` in `index.html`) to its full `https://…` URL.
 
 ## How the API calls work
 
 When running through `proxy.js`, the UI calls same-origin paths that the relay forwards:
+
+### Anthropic
+- **Endpoint:** `/anthropic/v1/messages` → `https://cc.freemodel.dev/v1/messages`
+- **Headers:** `x-api-key: {API_KEY}`, `anthropic-version: 2023-06-01`
+- **Body:** Claude Messages format — `{ model, max_tokens, stream, messages: [...] }`
+- **Attachments:** images as `image` blocks, PDFs as `document` blocks, text files inlined as text.
 
 ### OpenAI
 - **Endpoint:** `/openai/v1/chat/completions` → `https://api.freemodel.dev/v1/chat/completions`
@@ -60,7 +71,7 @@ When running through `proxy.js`, the UI calls same-origin paths that the relay f
 - **Body:** OpenAI Chat Completions format — `{ model, stream, messages: [...] }`
 - **Attachments:** images as `image_url` parts, PDFs as `file` parts, text files inlined as text.
 
-The selected **model / node** value (e.g. `openai-t1-sg`) is sent as the `model`
+The selected **model / node** value (e.g. `claude-opus-4-8`, `gpt-5.5`) is sent as the `model`
 field in the request body.
 
 ## Notes

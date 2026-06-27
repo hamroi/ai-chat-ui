@@ -46,8 +46,8 @@
     height: 100dvh;
     display: flex;
     flex-direction: column;
-    padding: 16px;
-    gap: 14px;
+    padding: 12px;
+    gap: 10px;
   }
 
   .card {
@@ -59,7 +59,7 @@
 
   /* ---- Intro ---- */
   .intro {
-    padding: 16px 18px;
+    padding: 10px 16px;
     position: relative;
     overflow: hidden;
   }
@@ -71,8 +71,8 @@
     background: linear-gradient(90deg, var(--brand1), var(--brand2), var(--brand3));
   }
   .intro h1 {
-    margin: 6px 0 4px;
-    font-size: 22px;
+    margin: 2px 0 2px;
+    font-size: 18px;
     font-weight: 800;
     letter-spacing: 0.2px;
     background: linear-gradient(90deg, var(--brand1), var(--brand2), var(--brand3));
@@ -83,17 +83,18 @@
   .intro p {
     margin: 0;
     color: var(--muted);
-    font-size: 13.5px;
+    font-size: 12.5px;
+    line-height: 1.4;
   }
 
   /* ---- Settings ---- */
   .settings {
-    padding: 14px;
+    padding: 10px 12px;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px 14px;
+    gap: 8px 12px;
   }
-  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
   .field.full { grid-column: 1 / -1; }
   .field label {
     font-size: 11.5px;
@@ -107,7 +108,7 @@
     border: 1.5px solid var(--border);
     color: var(--ink);
     border-radius: 11px;
-    padding: 10px 12px;
+    padding: 8px 11px;
     font-size: 14px;
     font-family: inherit;
     width: 100%;
@@ -128,7 +129,7 @@
     color: var(--ink);
     border-radius: 11px;
     padding: 0 14px;
-    height: 44px;
+    height: 40px;
     cursor: pointer;
     font-size: 13px;
     font-weight: 600;
@@ -152,9 +153,9 @@
     background: #fff;
     color: var(--ink);
     border-radius: 12px;
-    height: 46px;
-    width: 46px;
-    font-size: 18px;
+    height: 40px;
+    width: 40px;
+    font-size: 16px;
     cursor: pointer;
     flex: 0 0 auto;
     transition: all 0.15s ease;
@@ -320,6 +321,7 @@
     line-height: 1.45;
   }
   .composer .btn.brand { height: 46px; padding: 0 22px; font-size: 14px; }
+  .composer .icon-btn { height: 46px; width: 46px; font-size: 18px; }
 
   .toolbar {
     display: flex;
@@ -405,10 +407,10 @@
 
   <!-- Intro -->
   <section class="card intro">
-    <h1>🍖 FirstHam</h1>
+    <h1>FirstHam</h1>
     <p>
       <strong>FirstHam</strong> is a multi-model AI chat — bring your <strong>own API key</strong> and chat with
-      OpenAI models, with image &amp; file attachments. Pick a model, save your
+      Anthropic (Claude) and OpenAI models, with image &amp; file attachments. Pick a provider and model, save your
       key, and start chatting. Your key and history are stored only in this browser.
     </p>
   </section>
@@ -418,6 +420,7 @@
     <div class="field">
       <label for="provider">API type</label>
       <select id="provider">
+        <option value="anthropic">Anthropic (Claude)</option>
         <option value="openai">OpenAI</option>
       </select>
     </div>
@@ -434,11 +437,20 @@
       <label for="apiKey">API key</label>
       <div class="row">
         <input id="apiKey" type="password" placeholder="Paste your API key…" autocomplete="off" spellcheck="false" />
-        <button class="icon-btn" id="toggleKey" type="button" title="Show / hide key">👁</button>
+        <button class="icon-btn" id="toggleKey" type="button" title="Show / hide key">🔓</button>
         <button class="btn brand" id="saveKey" type="button">Save</button>
         <button class="btn danger" id="deleteKey" type="button">Delete</button>
       </div>
       <span class="hint" id="keyHint">Saved per provider in this browser. Click <strong>Save</strong> to store it.</span>
+    </div>
+
+    <div class="field full">
+      <label for="baseUrl">Base URL</label>
+      <div class="row">
+        <input id="baseUrl" type="text" spellcheck="false" autocomplete="off" placeholder="/openai" />
+        <button class="btn" id="resetBaseUrl" type="button" title="Reset to the default relay path">Reset</button>
+      </div>
+      <span class="hint">The platform <strong>origin</strong> for this provider (e.g. <code>https://api.anthropic.com</code>). The correct api path is added automatically per api type (OpenAI → <code>/v1/chat/completions</code>, Anthropic → <code>/v1/messages</code>). External URLs are routed through the local relay, so they work even without browser CORS. Saved per provider in this browser.</span>
     </div>
   </section>
 
@@ -486,16 +498,36 @@
 /* ----------------------------------------------------------------------------
  * Configuration
  *
- * Base URLs are RELATIVE so the page works same-origin behind the bundled relay
- * (proxy.js), which forwards /openai -> api.freemodel.dev. The upstream sends
- * no CORS headers, so a browser cannot
- * call it directly — run via `node proxy.js`. To target a CORS-enabled endpoint
- * instead, set baseUrl to its full https URL.
+ * Each provider has a `baseUrl` (just the origin / host) plus the api paths for
+ * its api type — `chatPath` and `modelsPath`. The full request URL is built as
+ * baseUrl + path, so the correct path is chosen AUTOMATICALLY from the api type:
+ * OpenAI -> /v1/chat/completions, Anthropic -> /v1/messages.
+ *
+ * The default baseUrls are RELATIVE (/anthropic, /openai) so the page works
+ * same-origin behind the bundled relay (proxy.js). To point a provider at any
+ * other platform, just set its Base URL field to that platform's origin (e.g.
+ * https://api.anthropic.com) — the path is appended for you. No code change.
  * ------------------------------------------------------------------------- */
 const PROVIDERS = {
+  anthropic: {
+    label: "Anthropic (Claude)",
+    baseUrl: "/anthropic",
+    chatPath: "/v1/messages",       // auto-appended to the base URL for this api type
+    modelsPath: "/v1/models",
+    models: [
+      { id: "claude-opus-4-8", label: "claude-opus-4-8" },
+      { id: "claude-opus-4-7", label: "claude-opus-4-7" },
+      { id: "claude-fable-5", label: "claude-fable-5" },
+      { id: "claude-sonnet-4-6", label: "claude-sonnet-4-6" },
+      { id: "claude-opus-4-6", label: "claude-opus-4-6" },
+      { id: "claude-haiku-4-5-20251001", label: "claude-haiku-4-5" },
+    ],
+  },
   openai: {
     label: "OpenAI",
     baseUrl: "/openai",
+    chatPath: "/v1/chat/completions", // auto-appended to the base URL for this api type
+    modelsPath: "/v1/models",
     models: [
       { id: "gpt-5.5", label: "gpt-5.5" },
       { id: "gpt-5.4", label: "gpt-5.4" },
@@ -505,6 +537,7 @@ const PROVIDERS = {
   },
 };
 
+const MAX_TOKENS = 4096;
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB per file
 const MAX_ATTACHMENTS = 10;
 
@@ -512,9 +545,37 @@ const STORE = {
   provider: "firstham:provider",
   model: (p) => `firstham:model:${p}`,
   key: (p) => `firstham:key:${p}`,
+  baseUrl: (p) => `firstham:baseurl:${p}`,
   allModels: (p) => `firstham:allmodels:${p}`,
   history: "firstham:history",
 };
+
+/** The base URL for a provider: a saved override, or the provider's default.
+ *  Trailing slashes are stripped so the api path joins cleanly. */
+function currentBaseUrl(provider) {
+  const override = (localStorage.getItem(STORE.baseUrl(provider)) || "").trim();
+  return (override || PROVIDERS[provider].baseUrl).replace(/\/+$/, "");
+}
+
+function isAbsoluteUrl(url) { return /^https?:\/\//i.test(url); }
+
+/** Full URL the browser actually fetches, with the correct api path appended.
+ *  For an ABSOLUTE base URL we still fetch the same-origin relay path — the relay
+ *  forwards to the real upstream (see upstreamHeaders) so the browser never hits
+ *  CORS. For a relative base (the default relay path) we fetch it directly. */
+function apiUrl(provider, kind) {
+  const cfg = PROVIDERS[provider];
+  const path = kind === "models" ? cfg.modelsPath : cfg.chatPath;
+  const base = currentBaseUrl(provider);
+  return (isAbsoluteUrl(base) ? cfg.baseUrl : base) + path;
+}
+
+/** Header telling the relay which upstream to forward to — only when the user
+ *  set an absolute (external) Base URL. Same-origin requests so no CORS. */
+function upstreamHeaders(provider) {
+  const base = currentBaseUrl(provider);
+  return isAbsoluteUrl(base) ? { "x-upstream-base": base } : {};
+}
 
 /* ----------------------------------------------------------------------------
  * Element references
@@ -532,6 +593,8 @@ const el = {
   saveKey: document.getElementById("saveKey"),
   deleteKey: document.getElementById("deleteKey"),
   keyHint: document.getElementById("keyHint"),
+  baseUrl: document.getElementById("baseUrl"),
+  resetBaseUrl: document.getElementById("resetBaseUrl"),
   messages: document.getElementById("messages"),
   empty: document.getElementById("empty"),
   attachStrip: document.getElementById("attachStrip"),
@@ -815,6 +878,11 @@ function loadKeyForProvider(provider) {
     : 'No key saved. Click <strong>Save</strong> to store it.';
 }
 
+function loadBaseUrlForProvider(provider) {
+  el.baseUrl.value = currentBaseUrl(provider);
+  el.baseUrl.placeholder = PROVIDERS[provider].baseUrl;
+}
+
 async function showAllModels() {
   const provider = currentProvider();
   const apiKey = el.apiKey.value.trim();
@@ -840,11 +908,12 @@ async function fetchAllModels(provider, apiKey) {
 
 /** Like fetchAllModels but returns the full model objects so callers can show details. */
 async function fetchAllModelObjects(provider, apiKey) {
-  const base = PROVIDERS[provider].baseUrl;
-  const headers = { "Authorization": `Bearer ${apiKey}` };
+  const headers = provider === "anthropic"
+    ? { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true", ...upstreamHeaders(provider) }
+    : { "Authorization": `Bearer ${apiKey}`, ...upstreamHeaders(provider) };
 
   let res;
-  try { res = await fetch(`${base}/v1/models`, { headers }); }
+  try { res = await fetch(apiUrl(provider, "models"), { headers }); }
   catch { throw new Error("Network error loading models — is the relay (proxy.js) running?"); }
   if (!res.ok) throw new Error(friendlyError(res.status).split("\n")[0]);
 
@@ -1001,6 +1070,19 @@ function toProviderMessage(provider, m) {
   const atts = (m.attachments || []).filter((a) => a.data); // metadata-only (post-refresh) is skipped
   if (!atts.length) return { role: "user", content: m.content || "" };
 
+  if (provider === "anthropic") {
+    const parts = [];
+    for (const a of atts) {
+      if (a.kind === "image") parts.push({ type: "image", source: { type: "base64", media_type: a.mediaType, data: a.data } });
+      else if (a.kind === "pdf") parts.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: a.data } });
+      else parts.push({ type: "text", text: `Attached file "${a.name}":\n\n${a.data}` });
+    }
+    if (m.content) parts.push({ type: "text", text: m.content });
+    if (!parts.length) parts.push({ type: "text", text: "" });
+    return { role: "user", content: parts };
+  }
+
+  // OpenAI
   const parts = [];
   if (m.content) parts.push({ type: "text", text: m.content });
   for (const a of atts) {
@@ -1013,23 +1095,48 @@ function toProviderMessage(provider, m) {
 }
 
 function buildRequest(provider, model, apiKey, messages) {
-  const cfg = PROVIDERS[provider];
+  const url = apiUrl(provider, "chat"); // path chosen automatically from the api type
+  const upstream = upstreamHeaders(provider);
+  if (provider === "anthropic") {
+    return {
+      url,
+      options: {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+          ...upstream,
+        },
+        body: JSON.stringify({ model, max_tokens: MAX_TOKENS, stream: true, messages }),
+      },
+    };
+  }
   return {
-    url: `${cfg.baseUrl}/v1/chat/completions`,
+    url,
     options: {
       method: "POST",
-      headers: { "content-type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      headers: { "content-type": "application/json", "Authorization": `Bearer ${apiKey}`, ...upstream },
       body: JSON.stringify({ model, stream: true, messages }),
     },
   };
 }
 
 function extractDelta(provider, obj) {
+  if (provider === "anthropic") {
+    if (obj.type === "error") throw new Error(obj.error?.message || "Anthropic stream error");
+    if (obj.type === "content_block_delta" && obj.delta?.type === "text_delta") return obj.delta.text || "";
+    return "";
+  }
   if (obj.error) throw new Error(obj.error.message || "OpenAI stream error");
   return obj.choices?.[0]?.delta?.content || "";
 }
 
 function extractFull(provider, data) {
+  if (provider === "anthropic") {
+    return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+  }
   return data.choices?.[0]?.message?.content || "";
 }
 
@@ -1235,6 +1342,27 @@ el.provider.addEventListener("change", () => {
   localStorage.setItem(STORE.provider, p);
   populateModels(p);
   loadKeyForProvider(p);
+  loadBaseUrlForProvider(p);
+});
+
+el.baseUrl.addEventListener("change", () => {
+  const p = currentProvider();
+  const val = el.baseUrl.value.trim();
+  if (!val || val === PROVIDERS[p].baseUrl) {
+    localStorage.removeItem(STORE.baseUrl(p));
+    el.baseUrl.value = PROVIDERS[p].baseUrl;
+    setStatus(`Base URL reset to default for ${PROVIDERS[p].label}.`);
+  } else {
+    localStorage.setItem(STORE.baseUrl(p), val);
+    setStatus(`Base URL saved for ${PROVIDERS[p].label}.`);
+  }
+});
+
+el.resetBaseUrl.addEventListener("click", () => {
+  const p = currentProvider();
+  localStorage.removeItem(STORE.baseUrl(p));
+  el.baseUrl.value = PROVIDERS[p].baseUrl;
+  setStatus(`Base URL reset to default for ${PROVIDERS[p].label}.`);
 });
 
 el.model.addEventListener("change", () => {
@@ -1266,7 +1394,7 @@ el.deleteKey.addEventListener("click", () => {
 el.toggleKey.addEventListener("click", () => {
   const show = el.apiKey.type === "password";
   el.apiKey.type = show ? "text" : "password";
-  el.toggleKey.textContent = show ? "🙈" : "👁";
+  el.toggleKey.textContent = show ? "🔒" : "🔓";
 });
 
 /* ----------------------------------------------------------------------------
@@ -1279,6 +1407,7 @@ function init() {
   const p = currentProvider();
   populateModels(p);
   loadKeyForProvider(p);
+  loadBaseUrlForProvider(p);
   renderAll();
   renderAttachStrip();
   autoSize();

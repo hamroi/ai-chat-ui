@@ -24,6 +24,7 @@ const agent = new https.Agent({ keepAlive: true });
 
 // Path prefix -> upstream base URL.
 const TARGETS = {
+  "/anthropic": "https://cc.freemodel.dev",
   "/openai": "https://api.freemodel.dev",
 };
 
@@ -46,7 +47,14 @@ const server = http.createServer((req, res) => {
   );
 
   if (prefix) {
-    const target = new URL(TARGETS[prefix] + req.url.slice(prefix.length));
+    // Where to forward: the page can override the upstream via x-upstream-base
+    // (so a browser can use ANY platform without hitting CORS — the relay makes
+    // the call server-side). Falls back to the built-in target for this prefix.
+    const override = req.headers["x-upstream-base"];
+    const upstreamBase = (typeof override === "string" && /^https?:\/\//i.test(override))
+      ? override.replace(/\/+$/, "")
+      : TARGETS[prefix];
+    const target = new URL(upstreamBase + req.url.slice(prefix.length));
 
     // Send tokens to the browser the instant they arrive instead of letting
     // Nagle's algorithm batch the small SSE writes (~40ms stalls per chunk).
@@ -58,13 +66,18 @@ const server = http.createServer((req, res) => {
     const headers = { ...req.headers, host: target.host };
     delete headers["origin"];
     delete headers["referer"];
+    delete headers["x-upstream-base"]; // our control header — don't forward it
     // Ask upstream for an uncompressed stream: gzip/br buffer chunks before
     // flushing, which delays SSE tokens. Identity lets them stream immediately.
     headers["accept-encoding"] = "identity";
 
-    const proxyReq = https.request(
+    // Pick transport + keep-alive agent by the upstream's protocol (a custom
+    // x-upstream-base may be http://, while the built-in targets are https://).
+    const isHttps = target.protocol === "https:";
+    const transport = isHttps ? https : http;
+    const proxyReq = transport.request(
       target,
-      { method: req.method, headers, agent },
+      { method: req.method, headers, agent: isHttps ? agent : undefined },
       (proxyRes) => {
         // Stream the upstream response straight back (preserves SSE streaming).
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
@@ -73,6 +86,9 @@ const server = http.createServer((req, res) => {
     );
 
     proxyReq.on("error", (err) => {
+      // If streaming already started we can't send a fresh status line — just end
+      // the response. Writing headers twice would crash the whole relay.
+      if (res.headersSent) { res.end(); return; }
       res.writeHead(502, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: { message: "Relay error: " + err.message } }));
     });
@@ -102,6 +118,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`FirstHam is running.`);
   console.log(`  Open:  http://localhost:${PORT}`);
-  console.log(`  Relay: /openai -> ${TARGETS["/openai"]}`);
+  console.log(`  Relay: /anthropic -> ${TARGETS["/anthropic"]}`);
+  console.log(`         /openai    -> ${TARGETS["/openai"]}`);
   console.log(`Press Ctrl+C to stop.`);
 });
