@@ -448,6 +448,7 @@
       <label for="baseUrl">Base URL</label>
       <div class="row">
         <input id="baseUrl" type="text" spellcheck="false" autocomplete="off" placeholder="/openai" />
+        <button class="btn" id="testConn" type="button" title="Check the API key and Base URL can reach this provider">Test</button>
         <button class="btn" id="resetBaseUrl" type="button" title="Reset to the default relay path">Reset</button>
       </div>
       <span class="hint">The platform <strong>origin</strong> for this provider (e.g. <code>https://api.anthropic.com</code>). The correct api path is added automatically per api type (OpenAI → <code>/v1/chat/completions</code>, Anthropic → <code>/v1/messages</code>). External URLs are routed through the local relay, so they work even without browser CORS. Saved per provider in this browser.</span>
@@ -595,6 +596,7 @@ const el = {
   keyHint: document.getElementById("keyHint"),
   baseUrl: document.getElementById("baseUrl"),
   resetBaseUrl: document.getElementById("resetBaseUrl"),
+  testConn: document.getElementById("testConn"),
   messages: document.getElementById("messages"),
   empty: document.getElementById("empty"),
   attachStrip: document.getElementById("attachStrip"),
@@ -881,6 +883,48 @@ function loadKeyForProvider(provider) {
 function loadBaseUrlForProvider(provider) {
   el.baseUrl.value = currentBaseUrl(provider);
   el.baseUrl.placeholder = PROVIDERS[provider].baseUrl;
+}
+
+/** Lightweight reachability + auth check: hits the provider's /v1/models with the
+ *  current Base URL and API key, and reports the result in the status line. */
+async function testConnection() {
+  const provider = currentProvider();
+  const apiKey = el.apiKey.value.trim();
+  if (!apiKey) { setStatus("Enter your API key first to test the connection."); return; }
+
+  const label = PROVIDERS[provider].label;
+  const restore = el.testConn.textContent;
+  el.testConn.disabled = true;
+  el.testConn.textContent = "Testing…";
+  setStatus(`Testing connection to ${label}…`);
+
+  const headers = provider === "anthropic"
+    ? { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true", ...upstreamHeaders(provider) }
+    : { "Authorization": `Bearer ${apiKey}`, ...upstreamHeaders(provider) };
+
+  try {
+    let res;
+    try {
+      res = await fetch(apiUrl(provider, "models"), { headers });
+    } catch {
+      setStatus("Connection failed — could not reach the service. Make sure the relay (proxy.js) is running and the Base URL is correct.");
+      return;
+    }
+    if (res.ok) {
+      let count = null;
+      try {
+        const d = await res.json();
+        const list = Array.isArray(d.data) ? d.data : Array.isArray(d) ? d : [];
+        count = list.length;
+      } catch {}
+      setStatus(`Connected ✓ — ${label} reachable${count != null ? ` · ${count} model(s) available` : ""}.`);
+    } else {
+      setStatus(`Reached ${label}, but the request failed: ${friendlyError(res.status).split("\n")[0]}`);
+    }
+  } finally {
+    el.testConn.disabled = false;
+    el.testConn.textContent = restore;
+  }
 }
 
 async function showAllModels() {
@@ -1364,6 +1408,8 @@ el.resetBaseUrl.addEventListener("click", () => {
   el.baseUrl.value = PROVIDERS[p].baseUrl;
   setStatus(`Base URL reset to default for ${PROVIDERS[p].label}.`);
 });
+
+el.testConn.addEventListener("click", testConnection);
 
 el.model.addEventListener("change", () => {
   localStorage.setItem(STORE.model(currentProvider()), el.model.value);
